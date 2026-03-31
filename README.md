@@ -27,6 +27,7 @@ python3 scripts/scan_compromised_versions.py /path/to/repo
 python3 scripts/scan_compromised_versions.py /path/one /path/two
 python3 scripts/scan_compromised_versions.py --json /
 python3 scripts/scan_compromised_versions.py --fail-on-match /path/to/repo
+python3 scripts/apply_release_age_guards.py
 ```
 
 Windows PowerShell:
@@ -64,6 +65,22 @@ python3 scripts/scan_compromised_versions.py \
 - `lockfile:*`: exact resolved version in a lockfile
 - `lockfile:bun.lockb`: best-effort binary-string match
 - `ioc:file-path`: host-level IOC such as `/Library/Caches/com.apple.act.mond`, `%PROGRAMDATA%\\wt.exe`, `%TEMP%\\6202033.vbs`, `%TEMP%\\6202033.ps1`, or `/tmp/ld.py`
+
+## Optional Hardening
+
+Run the helper below to add the release-age guardrails used during this incident response workflow:
+
+```bash
+python3 scripts/apply_release_age_guards.py
+```
+
+That helper:
+
+- adds `min-release-age=7` to `~/.npmrc` if that key is missing
+- adds `exclude-newer = "7 days"` to the user uv config if that key is missing
+- preserves existing config content and leaves existing guardrail keys untouched
+
+If the local npm CLI does not recognize `min-release-age`, upgrade npm first and rerun the helper.
 
 ## Notes
 

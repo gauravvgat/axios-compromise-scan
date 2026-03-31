@@ -14,6 +14,7 @@ Prefer the narrowest useful scope first.
 - JSON output: `python3 scripts/scan_compromised_versions.py --json /path/to/scan`
 - CI/blocking mode: `python3 scripts/scan_compromised_versions.py --fail-on-match /path/to/scan`
 - Custom targets: `python3 scripts/scan_compromised_versions.py --no-default-targets --target package@version /path/to/scan`
+- Hardening: `python3 scripts/apply_release_age_guards.py`
 
 Platform notes:
 
@@ -30,5 +31,7 @@ Interpret results as follows:
 - `ioc:file-path`: host-level indicator of compromise from the March 31, 2026 incident
 
 Use `references/incident-2026-03-31.md` when you need the IOC list. If package hits are found, also hunt for the C2 domain `sfrclak.com`, campaign ID `6202033`, and the compromised maintainer metadata in npm metadata, logs, EDR, and proxy telemetry.
+
+When the user asks to harden future package installs, run `scripts/apply_release_age_guards.py`. It adds `min-release-age=7` to `~/.npmrc` and `exclude-newer = "7 days"` to the user uv config only when those keys are absent. If the local npm CLI does not recognize `min-release-age`, upgrade npm first.
 
 For real-world scans, if any of the default compromised versions are found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and hand it to IT or security immediately.

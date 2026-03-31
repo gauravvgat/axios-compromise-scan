@@ -53,7 +53,17 @@ python3 scripts/scan_compromised_versions.py \
 python3 scripts/scan_compromised_versions.py --fail-on-match /path/to/scan
 ```
 
-5. Use the built-in IOC hunt during incident response.
+5. Add release-age guardrails for future installs when the user wants hardening.
+
+```bash
+python3 scripts/apply_release_age_guards.py
+```
+
+- This adds `min-release-age=7` to `~/.npmrc` if that key is not already present.
+- This adds `exclude-newer = "7 days"` to the user uv config if that key is not already present.
+- If the local npm CLI does not recognize `min-release-age`, upgrade npm first and then apply the guardrails.
+
+6. Use the built-in IOC hunt during incident response.
 
 - The scanner always checks current-platform filesystem IOC paths from the incident reference.
 - If package hits are found, also use the reference file to hunt for the C2 domain `sfrclak.com`, campaign ID `6202033`, and the compromised maintainer metadata in package logs, npm metadata, EDR, proxy logs, and shell history.
@@ -78,5 +88,6 @@ When reporting back:
 
 - Prefer the script over ad hoc grep so the result is reproducible.
 - The script uses platform-aware pruning so full-system scans behave sensibly on macOS, Linux, and Windows.
+- The hardening helper preserves existing config files and leaves existing npm and uv guardrail keys untouched.
 - Keep the default target list in the script and the incident reference aligned.
 - Update `agents/openai.yaml` if the skill’s UI-facing behavior changes materially.

@@ -1,4 +1,4 @@
 interface:
   display_name: "Axios Compromise Scan"
-  short_description: "Scan manifests and lockfiles for compromised axios incident versions"
-  default_prompt: "Use $axios-compromise-scan to search a repo or machine for compromised package versions."
+  short_description: "Scan for compromised axios incident versions and add npm/uv hardening guards"
+  default_prompt: "Use $axios-compromise-scan to search a repo or machine for compromised package versions and, when requested, add npm and uv release-age guardrails."
