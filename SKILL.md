@@ -1,9 +1,9 @@
 ---
-name: scan-compromised-package-versions
+name: axios-compromise-scan
 description: Scan Node.js dependency manifests and lockfiles for compromised package versions, with defaults for the March 31, 2026 axios/plain-crypto-js incident. Use when Codex needs to check a repository, workspace, CI checkout, or a broader filesystem path on macOS, Linux, or Windows for known bad versions in package.json, package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml, bun.lock, bun.lockb, or installed package manifests under node_modules.
 ---
 
-# Scan Compromised Package Versions
+# Axios Compromise Scan
 
 ## Overview
 
