@@ -1,13 +1,13 @@
 ---
 name: scan-compromised-package-versions
-description: Scan Node.js dependency manifests and lockfiles for compromised package versions, with defaults for the March 31, 2026 axios/plain-crypto-js incident. Use when Codex needs to check a repository, workspace, CI checkout, or a broader filesystem path for known bad versions in package.json, package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml, bun.lock, bun.lockb, or installed package manifests under node_modules.
+description: Scan Node.js dependency manifests and lockfiles for compromised package versions, with defaults for the March 31, 2026 axios/plain-crypto-js incident. Use when Codex needs to check a repository, workspace, CI checkout, or a broader filesystem path on macOS, Linux, or Windows for known bad versions in package.json, package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml, bun.lock, bun.lockb, or installed package manifests under node_modules.
 ---
 
 # Scan Compromised Package Versions
 
 ## Overview
 
-Use the bundled scanner to search one or more filesystem roots for exact package-version matches. Default targets:
+Use the bundled scanner to search one or more filesystem roots for exact package-version matches. The script is cross-platform and can also be called from other agents such as Claude Code. Default targets:
 
 - `axios@1.14.1`
 - `axios@0.30.4`
@@ -21,7 +21,7 @@ Read [references/incident-2026-03-31.md](references/incident-2026-03-31.md) only
 
 - Repository check: scan the repo root.
 - Workspace check: scan one or more top-level project directories.
-- Full machine check: scan `/` only when the user explicitly asks for a full-system search.
+- Full machine check: scan `/` on macOS or Linux, or a drive root such as `C:\` on Windows, only when the user explicitly asks for a full-system search.
 
 2. Run the scanner.
 
@@ -29,6 +29,11 @@ Read [references/incident-2026-03-31.md](references/incident-2026-03-31.md) only
 python3 scripts/scan_compromised_versions.py /path/to/repo
 python3 scripts/scan_compromised_versions.py /Users/gaurav/Code /Users/gaurav/.nvm
 python3 scripts/scan_compromised_versions.py --json /
+```
+
+```powershell
+py scripts\scan_compromised_versions.py C:\src\repo
+py scripts\scan_compromised_versions.py --json C:\
 ```
 
 3. Override targets when needed.
@@ -64,5 +69,6 @@ When reporting back:
 ## Notes
 
 - Prefer the script over ad hoc grep so the result is reproducible.
+- The script uses platform-aware pruning so full-system scans behave sensibly on macOS, Linux, and Windows.
 - Keep the default target list in the script and the incident reference aligned.
 - Update `agents/openai.yaml` if the skill’s UI-facing behavior changes materially.

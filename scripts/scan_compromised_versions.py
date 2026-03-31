@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import ntpath
 import os
+import platform
+import posixpath
 import re
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 DEFAULT_TARGETS = [
     ("axios", "1.14.1"),
@@ -38,15 +41,34 @@ PRUNED_DIR_NAMES = {
     "dist",
 }
 
-PRUNED_ABSOLUTE_PREFIXES = (
-    "/System",
-    "/Volumes",
-    "/dev",
-    "/proc",
-    "/tmp",
-    "/private/tmp",
-    "/private/var/tmp",
-)
+PRUNED_ABSOLUTE_PREFIXES_BY_PLATFORM = {
+    "Darwin": (
+        "/System",
+        "/Volumes",
+        "/dev",
+        "/proc",
+        "/tmp",
+        "/private/tmp",
+        "/private/var/tmp",
+    ),
+    "Linux": (
+        "/dev",
+        "/proc",
+        "/sys",
+        "/tmp",
+        "/run",
+        "/var/tmp",
+    ),
+}
+
+WINDOWS_PRUNED_BASENAMES = {
+    "$recycle.bin",
+    "system volume information",
+}
+
+WINDOWS_PRUNED_SUFFIXES = {
+    ("windows", "temp"),
+}
 
 
 @dataclass(order=True)
@@ -113,11 +135,43 @@ def compile_targets(args: argparse.Namespace) -> list[tuple[str, str]]:
     return deduped
 
 
-def should_prune_path(path: str) -> bool:
-    normalized = os.path.realpath(path)
+def normalize_path(path: str, system_name: str | None = None) -> str:
+    system_name = system_name or platform.system()
+    if system_name == "Windows":
+        if os.name == "nt":
+            path = os.path.realpath(path)
+        return ntpath.normcase(ntpath.normpath(path))
+    if os.name != "nt":
+        path = os.path.realpath(path)
+    return os.path.normcase(posixpath.normpath(path))
+
+
+def path_parts(path: str, system_name: str) -> tuple[str, ...]:
+    if system_name == "Windows":
+        pure_path = PureWindowsPath(path)
+    else:
+        pure_path = PurePosixPath(path)
+    return tuple(part.casefold() for part in pure_path.parts if part)
+
+
+def should_prune_path(path: str, system_name: str | None = None) -> bool:
+    system_name = system_name or platform.system()
+    normalized = normalize_path(path, system_name)
+
+    if system_name == "Windows":
+        parts = path_parts(normalized, system_name)
+        if not parts:
+            return False
+        if parts[-1] in WINDOWS_PRUNED_BASENAMES:
+            return True
+        return any(parts[-len(suffix) :] == suffix for suffix in WINDOWS_PRUNED_SUFFIXES)
+
+    prefixes = tuple(
+        normalize_path(prefix, system_name)
+        for prefix in PRUNED_ABSOLUTE_PREFIXES_BY_PLATFORM.get(system_name, ())
+    )
     return any(
-        normalized == prefix or normalized.startswith(prefix + os.sep)
-        for prefix in PRUNED_ABSOLUTE_PREFIXES
+        normalized == prefix or normalized.startswith(prefix + os.sep) for prefix in prefixes
     )
 
 
@@ -125,6 +179,7 @@ def iter_candidate_files(roots: list[str]) -> tuple[list[Path], list[str]]:
     candidates: list[Path] = []
     warnings: list[str] = []
     seen: set[str] = set()
+    system_name = platform.system()
 
     for raw_root in roots:
         root = Path(raw_root).expanduser()
@@ -132,7 +187,7 @@ def iter_candidate_files(roots: list[str]) -> tuple[list[Path], list[str]]:
             warnings.append(f"missing-root:{root}")
             continue
 
-        resolved_root = Path(os.path.realpath(root))
+        resolved_root = Path(normalize_path(str(root), system_name))
         if resolved_root.is_file():
             if resolved_root.name in TARGET_FILE_NAMES:
                 resolved_text = str(resolved_root)
@@ -144,7 +199,9 @@ def iter_candidate_files(roots: list[str]) -> tuple[list[Path], list[str]]:
         for current_root, dir_names, file_names in os.walk(
             resolved_root, topdown=True, followlinks=False
         ):
-            if should_prune_path(current_root):
+            if current_root != str(resolved_root) and should_prune_path(
+                current_root, system_name
+            ):
                 dir_names[:] = []
                 continue
 
@@ -153,7 +210,7 @@ def iter_candidate_files(roots: list[str]) -> tuple[list[Path], list[str]]:
                 child = os.path.join(current_root, dir_name)
                 if dir_name in PRUNED_DIR_NAMES:
                     continue
-                if should_prune_path(child):
+                if should_prune_path(child, system_name):
                     continue
                 next_dirs.append(dir_name)
             dir_names[:] = next_dirs
