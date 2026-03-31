@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compromised Package Scan"
+  short_description: "Scan manifests and lockfiles for compromised package versions"
+  default_prompt: "Use $scan-compromised-package-versions to search a repo or machine for compromised package versions."
