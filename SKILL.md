@@ -65,6 +65,7 @@ When reporting back:
 - State whether the results are exact matches or nearby safe versions.
 - If there are no hits, say so explicitly.
 - If there are hits, list the exact file paths and explain whether they are manifests, installed packages, or lockfiles.
+- For real-world scans, if any default target is found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and take it to IT or security immediately.
 
 ## Notes
 

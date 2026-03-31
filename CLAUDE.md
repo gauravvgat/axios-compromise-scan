@@ -26,3 +26,5 @@ Interpret results as follows:
 - `installed-package`: installed package manifest, usually under `node_modules`
 - `lockfile:*`: exact resolved version in a lockfile
 - `lockfile:bun.lockb`: best-effort binary-string match; verify critical hits with a second check
+
+For real-world scans, if any of the default compromised versions are found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and hand it to IT or security immediately.

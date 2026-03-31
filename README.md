@@ -67,4 +67,5 @@ python3 scripts/scan_compromised_versions.py \
 
 - The scan reports exact matches, not approximate or range-based risk.
 - Full-system scans use platform-aware pruning to skip common OS-managed temp or virtual filesystem locations.
+- For real-world scans, if any of the default compromised versions are found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and take it to IT or security immediately.
 - If you install this as a local skill via the current `skill-installer`, do not use `--path .`; that installer path currently sparse-checks out only top-level files for repo-root installs.
