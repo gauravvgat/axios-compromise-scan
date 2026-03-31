@@ -6,6 +6,7 @@ Default targets:
 
 - `axios@1.14.1`
 - `axios@0.30.4`
+- `plain-crypto-js@4.2.0`
 - `plain-crypto-js@4.2.1`
 
 The scanner works on macOS, Linux, and Windows and can scan a single repo, multiple roots, or a full machine path when explicitly requested.
@@ -62,10 +63,12 @@ python3 scripts/scan_compromised_versions.py \
 - `installed-package`: installed package manifest, usually under `node_modules`
 - `lockfile:*`: exact resolved version in a lockfile
 - `lockfile:bun.lockb`: best-effort binary-string match
+- `ioc:file-path`: host-level IOC such as `/Library/Caches/com.apple.act.mond`, `%PROGRAMDATA%\\wt.exe`, `%TEMP%\\6202033.vbs`, `%TEMP%\\6202033.ps1`, or `/tmp/ld.py`
 
 ## Notes
 
 - The scan reports exact matches, not approximate or range-based risk.
 - Full-system scans use platform-aware pruning to skip common OS-managed temp or virtual filesystem locations.
+- The scanner also checks current-platform filesystem IOCs from the March 31, 2026 incident and the incident reference includes the network, npm account, and timeline details needed for deeper hunting.
 - For real-world scans, if any of the default compromised versions are found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and take it to IT or security immediately.
 - If you install this as a local skill via the current `skill-installer`, do not use `--path .`; that installer path currently sparse-checks out only top-level files for repo-root installs.

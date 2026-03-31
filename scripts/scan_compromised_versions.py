@@ -17,6 +17,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 DEFAULT_TARGETS = [
     ("axios", "1.14.1"),
     ("axios", "0.30.4"),
+    ("plain-crypto-js", "4.2.0"),
     ("plain-crypto-js", "4.2.1"),
 ]
 
@@ -75,6 +76,13 @@ WINDOWS_PRUNED_SUFFIXES = {
 class Match:
     package: str
     version: str
+    kind: str
+    path: str
+    detail: str
+
+
+@dataclass(order=True)
+class IOCMatch:
     kind: str
     path: str
     detail: str
@@ -242,6 +250,41 @@ def add_match(
     if key not in seen:
         seen.add(key)
         matches.append(item)
+
+
+def build_ioc_paths(system_name: str) -> list[tuple[str, str]]:
+    if system_name == "Darwin":
+        return [
+            (
+                "/Library/Caches/com.apple.act.mond",
+                "macOS stage-2 binary disguised as an Apple daemon",
+            )
+        ]
+    if system_name == "Linux":
+        return [
+            (
+                "/tmp/ld.py",
+                "Linux stage-2 Python script",
+            )
+        ]
+    if system_name == "Windows":
+        program_data = os.environ.get("PROGRAMDATA", r"C:\ProgramData")
+        temp_dir = os.environ.get("TEMP") or os.environ.get("TMP") or r"C:\Windows\Temp"
+        return [
+            (
+                ntpath.join(program_data, "wt.exe"),
+                "Renamed PowerShell copy",
+            ),
+            (
+                ntpath.join(temp_dir, "6202033.vbs"),
+                "Transient VBScript loader",
+            ),
+            (
+                ntpath.join(temp_dir, "6202033.ps1"),
+                "Transient PowerShell payload",
+            ),
+        ]
+    return []
 
 
 def version_in_spec(spec: str, version: str) -> bool:
@@ -525,11 +568,22 @@ def scan_file(
         warnings.append(f"read-error:{path}:{error}")
 
 
+def collect_ioc_matches(system_name: str) -> list[IOCMatch]:
+    findings: list[IOCMatch] = []
+    for raw_path, detail in build_ioc_paths(system_name):
+        path = Path(raw_path)
+        if path.exists():
+            findings.append(IOCMatch("ioc:file-path", str(path), detail))
+    findings.sort()
+    return findings
+
+
 def render_text(
     roots: list[str],
     targets: list[tuple[str, str]],
     scanned_files: int,
     matches: list[Match],
+    ioc_matches: list[IOCMatch],
     warnings: list[str],
 ) -> str:
     lines = []
@@ -547,6 +601,12 @@ def render_text(
     else:
         lines.append("matches: 0")
         lines.append("No exact matches found.")
+    if ioc_matches:
+        lines.append(f"ioc_matches: {len(ioc_matches)}")
+        for finding in ioc_matches:
+            lines.append(f"- [{finding.kind}] {finding.path} ({finding.detail})")
+    else:
+        lines.append("ioc_matches: 0")
     if warnings:
         lines.append(f"warnings: {len(warnings)}")
         lines.extend(f"- {warning}" for warning in warnings)
@@ -568,27 +628,40 @@ def main() -> int:
     candidate_files, warnings = iter_candidate_files(args.roots)
     matches: list[Match] = []
     seen: set[tuple[str, str, str, str, str]] = set()
+    system_name = platform.system()
 
     for path in candidate_files:
         scan_file(path, targets, matches, seen, warnings)
 
     matches.sort()
+    ioc_matches = collect_ioc_matches(system_name)
 
     if args.json:
         payload = {
+            "platform": system_name,
             "roots": args.roots,
             "targets": [
                 {"package": package, "version": version} for package, version in targets
             ],
             "scanned_files": len(candidate_files),
             "matches": [asdict(match) for match in matches],
+            "ioc_matches": [asdict(match) for match in ioc_matches],
             "warnings": warnings,
         }
         print(json.dumps(payload, indent=2))
     else:
-        print(render_text(args.roots, targets, len(candidate_files), matches, warnings))
+        print(
+            render_text(
+                args.roots,
+                targets,
+                len(candidate_files),
+                matches,
+                ioc_matches,
+                warnings,
+            )
+        )
 
-    if args.fail_on_match and matches:
+    if args.fail_on_match and (matches or ioc_matches):
         return 1
     return 0
 

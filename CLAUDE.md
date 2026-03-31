@@ -4,6 +4,7 @@ Default targets:
 
 - `axios@1.14.1`
 - `axios@0.30.4`
+- `plain-crypto-js@4.2.0`
 - `plain-crypto-js@4.2.1`
 
 Prefer the narrowest useful scope first.
@@ -26,5 +27,8 @@ Interpret results as follows:
 - `installed-package`: installed package manifest, usually under `node_modules`
 - `lockfile:*`: exact resolved version in a lockfile
 - `lockfile:bun.lockb`: best-effort binary-string match; verify critical hits with a second check
+- `ioc:file-path`: host-level indicator of compromise from the March 31, 2026 incident
+
+Use `references/incident-2026-03-31.md` when you need the IOC list. If package hits are found, also hunt for the C2 domain `sfrclak.com`, campaign ID `6202033`, and the compromised maintainer metadata in npm metadata, logs, EDR, and proxy telemetry.
 
 For real-world scans, if any of the default compromised versions are found, assume the machine or environment is compromised ("pwned"): stop using it, shut it down, and hand it to IT or security immediately.

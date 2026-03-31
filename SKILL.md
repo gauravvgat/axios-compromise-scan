@@ -11,9 +11,10 @@ Use the bundled scanner to search one or more filesystem roots for exact package
 
 - `axios@1.14.1`
 - `axios@0.30.4`
+- `plain-crypto-js@4.2.0`
 - `plain-crypto-js@4.2.1`
 
-Read [references/incident-2026-03-31.md](references/incident-2026-03-31.md) only when the user asks why those targets were chosen or when the default list needs to be updated.
+Read [references/incident-2026-03-31.md](references/incident-2026-03-31.md) when the user asks why those targets were chosen, when you need the IOC list, or when the default incident scope needs to be updated.
 
 ## Workflow
 
@@ -52,12 +53,18 @@ python3 scripts/scan_compromised_versions.py \
 python3 scripts/scan_compromised_versions.py --fail-on-match /path/to/scan
 ```
 
+5. Use the built-in IOC hunt during incident response.
+
+- The scanner always checks current-platform filesystem IOC paths from the incident reference.
+- If package hits are found, also use the reference file to hunt for the C2 domain `sfrclak.com`, campaign ID `6202033`, and the compromised maintainer metadata in package logs, npm metadata, EDR, proxy logs, and shell history.
+
 ## Interpreting Results
 
 - Treat `manifest:*` hits as declared dependency specs in a `package.json`.
 - Treat `installed-package` hits as an already-installed package manifest, usually under `node_modules`.
 - Treat `lockfile:*` hits as an exact resolved version in a lockfile.
 - Treat `lockfile:bun.lockb` hits as best-effort binary-string matches and verify them with a second check if they are critical.
+- Treat `ioc:file-path` hits as host-level indicators of compromise from the March 31, 2026 incident.
 
 When reporting back:
 
